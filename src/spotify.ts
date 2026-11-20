@@ -39,6 +39,8 @@ async function api<T>(path: string, init: RequestInit = {}, retried = false, ref
     const body = await res.json().catch(() => null);
     throw new SpotifyError(res.status, body?.error?.reason, body?.error?.message ?? res.statusText);
   }
+  // Player commands answer with an empty or plain-text body (not JSON), which we don't need.
+  if (!res.headers.get('Content-Type')?.includes('json')) return null;
   const text = await res.text();
   return text ? (JSON.parse(text) as T) : null;
 }
