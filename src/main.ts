@@ -58,8 +58,9 @@ function render() {
   const track = currentTrack();
   $('counter').textContent = `Song ${queue.index + 1} / ${queue.order.length}`;
   $<HTMLButtonElement>('prev').disabled = queue.index === 0;
-  $('play-icon').hidden = isPlaying;
-  $('pause-icon').hidden = !isPlaying;
+  // The icons are <svg>, which has no `hidden` property — set the attribute instead.
+  $('play-icon').toggleAttribute('hidden', isPlaying);
+  $('pause-icon').toggleAttribute('hidden', !isPlaying);
   $('play').setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
   $('card').classList.toggle('playing', isPlaying);
 
