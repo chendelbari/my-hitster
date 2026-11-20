@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#12101c" />
+    <title>My Hitster</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon-192.png" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+  </head>
+  <body>
+    <main>
+      <section id="login" hidden>
+        <h1>My Hitster</h1>
+        <p>Guess the song, the artist and the year.</p>
+        <button id="login-btn" class="primary">Log in with Spotify</button>
+      </section>
+
+      <section id="loading">
+        <div class="spinner"></div>
+        <p id="loading-text">Loading…</p>
+      </section>
+
+      <section id="game" hidden>
+        <header>
+          <span id="counter"></span>
+          <button id="reshuffle" class="icon-btn" aria-label="Start a new shuffle">
+            <svg viewBox="0 0 24 24"><path d="M10.6 9.2 5.4 4 4 5.4l5.2 5.2 1.4-1.4ZM14.5 4l2 2L4 18.6 5.4 20 18 7.5l2 2V4h-5.5Zm.3 9.4-1.4 1.4 3.1 3.1L14.5 20H20v-5.5l-2 2-3.2-3.1Z"/></svg>
+          </button>
+        </header>
+
+        <div id="card" class="card">
+          <div id="hidden-face" class="face">
+            <div class="record"><span>?</span></div>
+          </div>
+          <div id="revealed-face" class="face" hidden>
+            <div id="year" class="year"></div>
+            <div id="year-note" class="note"></div>
+            <div id="title" class="title"></div>
+            <div id="artist" class="artist"></div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="prev" class="icon-btn" aria-label="Previous song">
+            <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6V6Zm3.5 6 8.5 6V6l-8.5 6Z"/></svg>
+          </button>
+          <button id="play" class="play-btn" aria-label="Play">
+            <svg id="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z"/></svg>
+            <svg id="pause-icon" viewBox="0 0 24 24" hidden><path d="M6 19h4V5H6v14Zm8-14v14h4V5h-4Z"/></svg>
+          </button>
+          <button id="next" class="icon-btn" aria-label="Next song">
+            <svg viewBox="0 0 24 24"><path d="m6 18 8.5-6L6 6v12ZM16 6v12h2V6h-2Z"/></svg>
+          </button>
+        </div>
+
+        <button id="reveal" class="primary">Reveal</button>
+      </section>
+
+      <div id="toast" hidden></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
