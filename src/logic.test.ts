@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { cleanTitle, matchingYears, normalize, type MbRecording } from './year';
 import { reconcile, shuffle } from './queue';
+import { formatTime } from './time';
 
 describe('cleanTitle', () => {
   it.each([
@@ -87,5 +88,17 @@ describe('queue', () => {
   it('handles the current song being removed', () => {
     const q = reconcile({ order: ['a', 'b', 'c'], index: 2 }, ['a', 'b']);
     expect(q).toEqual({ order: ['a', 'b'], index: 1 });
+  });
+});
+
+describe('formatTime', () => {
+  it.each([
+    [0, '0:00'],
+    [4_000, '0:04'],
+    [250_999, '4:10'],
+    [3_725_000, '62:05'],
+    [-500, '0:00'],
+  ])('%i ms → %s', (ms, expected) => {
+    expect(formatTime(ms)).toBe(expected);
   });
 });

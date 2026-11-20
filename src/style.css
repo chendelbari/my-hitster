@@ -173,6 +173,54 @@ header {
   color: var(--muted);
 }
 
+.progress {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+/* A tall, transparent input for an easy touch target; the thin line is drawn on the track. */
+#seek {
+  flex: 1;
+  appearance: none;
+  height: 32px;
+  margin: 0;
+  background: none;
+}
+
+#seek::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--text) var(--progress, 0%), #4a4560 var(--progress, 0%));
+}
+
+#seek::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--text) var(--progress, 0%), #4a4560 var(--progress, 0%));
+}
+
+#seek::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+#seek::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: var(--text);
+}
+
 .controls {
   display: flex;
   align-items: center;

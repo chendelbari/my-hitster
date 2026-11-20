@@ -9,6 +9,7 @@ export interface Track {
   artists: string[];
   /** Year of the specific album/release on Spotify — often a remaster or compilation. */
   spotifyYear: number | null;
+  durationMs: number;
 }
 
 export class SpotifyError extends Error {
@@ -56,6 +57,7 @@ interface RawTrack {
   uri: string;
   type: string;
   name: string;
+  duration_ms: number;
   artists: { name: string }[];
   album?: { release_date?: string };
 }
@@ -74,6 +76,7 @@ export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
         name: t.name,
         artists: t.artists.map((a) => a.name),
         spotifyYear: Number.isFinite(year) && year > 0 ? year : null,
+        durationMs: t.duration_ms,
       });
     }
     if (!page?.next) break;
@@ -100,15 +103,19 @@ export async function findDevice(): Promise<string | null> {
   return device?.id ?? null;
 }
 
-export async function playTrack(deviceId: string, uri: string): Promise<void> {
+export async function playTrack(deviceId: string, uri: string, positionMs = 0): Promise<void> {
   await api(`/me/player/play?device_id=${deviceId}`, {
     method: 'PUT',
-    body: JSON.stringify({ uris: [uri], position_ms: 0 }),
+    body: JSON.stringify({ uris: [uri], position_ms: positionMs }),
   });
 }
 
 export async function resume(deviceId: string): Promise<void> {
   await api(`/me/player/play?device_id=${deviceId}`, { method: 'PUT' });
+}
+
+export async function seek(deviceId: string, positionMs: number): Promise<void> {
+  await api(`/me/player/seek?position_ms=${Math.round(positionMs)}&device_id=${deviceId}`, { method: 'PUT' });
 }
 
 export async function pause(): Promise<void> {
@@ -118,9 +125,12 @@ export async function pause(): Promise<void> {
 export interface PlaybackState {
   isPlaying: boolean;
   uri: string | null;
+  progressMs: number;
 }
 
 export async function getPlaybackState(): Promise<PlaybackState | null> {
-  const res = await api<{ is_playing: boolean; item?: { uri: string } | null }>('/me/player');
-  return res ? { isPlaying: res.is_playing, uri: res.item?.uri ?? null } : null;
+  const res = await api<{ is_playing: boolean; progress_ms: number | null; item?: { uri: string } | null }>(
+    '/me/player',
+  );
+  return res ? { isPlaying: res.is_playing, uri: res.item?.uri ?? null, progressMs: res.progress_ms ?? 0 } : null;
 }

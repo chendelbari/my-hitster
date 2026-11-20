@@ -9,9 +9,11 @@ import {
   pause,
   playTrack,
   resume,
+  seek,
   SpotifyError,
   type Track,
 } from './spotify';
+import { formatTime } from './time';
 import { cleanTitle, findEarliestYear } from './year';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -32,9 +34,24 @@ let startedUri: string | null = null;
 let deviceId: string | null = null;
 let busy = false;
 let lastCommandAt = 0;
+/** Song position as last known from Spotify (or set by us), and when; we extrapolate while playing. */
+let positionMs = 0;
+let positionAt = 0;
+/** True while the user drags the seek bar, so the ticking position doesn't fight their finger. */
+let seeking = false;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const currentTrack = () => tracks.get(queue.order[queue.index])!;
+
+function setPosition(ms: number) {
+  positionMs = ms;
+  positionAt = Date.now();
+}
+
+function currentPosition() {
+  const ms = isPlaying ? positionMs + Date.now() - positionAt : positionMs;
+  return Math.min(ms, currentTrack().durationMs);
+}
 
 function show(section: 'login' | 'loading' | 'game', loadingText = 'Loading…') {
   for (const id of ['login', 'loading', 'game']) $(id).hidden = id !== section;
@@ -63,6 +80,7 @@ function render() {
   $('pause-icon').toggleAttribute('hidden', !isPlaying);
   $('play').setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
   $('card').classList.toggle('playing', isPlaying);
+  renderProgress();
 
   $('hidden-face').hidden = revealed;
   $('revealed-face').hidden = !revealed;
@@ -81,6 +99,16 @@ function render() {
     $('year').textContent = '…';
     $('year-note').textContent = 'Looking up the original year';
   }
+}
+
+function renderProgress() {
+  const bar = $<HTMLInputElement>('seek');
+  const duration = currentTrack().durationMs;
+  if (!seeking) bar.value = String(currentPosition());
+  bar.max = String(duration);
+  bar.style.setProperty('--progress', `${(Number(bar.value) / duration) * 100}%`);
+  $('elapsed').textContent = formatTime(Number(bar.value));
+  $('duration').textContent = formatTime(duration);
 }
 
 // --- Playback ---------------------------------------------------------------
@@ -123,10 +151,11 @@ async function run(action: () => Promise<void>) {
   }
 }
 
-async function startCurrent() {
+async function startCurrent(fromMs = 0) {
   const uri = currentTrack().uri;
-  await onDevice((d) => playTrack(d, uri));
+  await onDevice((d) => playTrack(d, uri, fromMs));
   startedUri = uri;
+  setPosition(fromMs);
   isPlaying = true;
 }
 
@@ -134,12 +163,26 @@ function togglePlay() {
   run(async () => {
     if (isPlaying) {
       await pause();
+      setPosition(currentPosition());
       isPlaying = false;
     } else if (startedUri === currentTrack().uri) {
       await onDevice(resume);
+      setPosition(positionMs);
       isPlaying = true;
     } else {
       await startCurrent();
+    }
+  });
+}
+
+/** Jumps within the current song; starts it there if it isn't the one loaded on Spotify. */
+function seekTo(ms: number) {
+  run(async () => {
+    if (startedUri === currentTrack().uri) {
+      await onDevice((d) => seek(d, ms));
+      setPosition(ms);
+    } else {
+      await startCurrent(ms);
     }
   });
 }
@@ -155,6 +198,7 @@ function go(delta: number) {
   }
   queue.index = next;
   revealed = false;
+  setPosition(0);
   saveQueue();
   render();
   run(startCurrent);
@@ -165,6 +209,7 @@ function reshuffle() {
   queue = { order: shuffle(queue.order), index: 0 };
   revealed = false;
   startedUri = null;
+  setPosition(0);
   saveQueue();
   render();
   if (isPlaying)
@@ -183,6 +228,7 @@ async function syncPlayback() {
     const onOurSong = !!state && state.uri === currentTrack().uri;
     if (!onOurSong) startedUri = null;
     isPlaying = onOurSong && state!.isPlaying;
+    setPosition(onOurSong ? state!.progressMs : 0);
     render();
   } catch {
     // Polling is best effort.
@@ -231,6 +277,15 @@ async function start() {
     revealed = !revealed;
     render();
   };
+  const bar = $<HTMLInputElement>('seek');
+  bar.oninput = () => {
+    seeking = true;
+    renderProgress();
+  };
+  bar.onchange = () => {
+    seeking = false;
+    seekTo(Number(bar.value));
+  };
   $('toast').onclick = () => ($('toast').hidden = true);
 
   try {
@@ -264,6 +319,7 @@ async function start() {
   render();
   yearWorker();
   setInterval(syncPlayback, 5000);
+  setInterval(() => isPlaying && renderProgress(), 500);
   document.addEventListener('visibilitychange', syncPlayback);
 }
 
